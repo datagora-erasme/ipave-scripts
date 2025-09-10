@@ -1,5 +1,14 @@
 {
   "name": "ipave-scripts",
   "version": "0.0.1",
-  "private": false
+  "private": false,
+  "author": "Romain MATIAS",
+  "maintainer": "Romain MATIAS",
+  "copyright": "Copyright 2025, EXO-DEV x ERASME, Métropole de Lyon",
+  "description": "Scripts utilisés pour des calculs sur la végétalisation de la voirie pour la Métropole de Lyon",
+  "credits": "Romain MATIAS, Natacha SALMERON, Xavier THIERMANT, Anthony ANGELOT",
+  "date": "2025-09-10",
+  "license": "MIT",
+  "email": "contact@exo-dev.fr",
+  "status": "Expérimentation"
 }

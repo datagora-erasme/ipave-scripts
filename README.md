@@ -2,7 +2,7 @@
 
 Python Project for versionning scripts, working on a virtual environement
 
-`Python Version 3.13`
+`Python Version 3.11` (minimum)
 
 ## Packages Dependencies
 
@@ -10,6 +10,9 @@ Python Project for versionning scripts, working on a virtual environement
 - **geopandas** for geospatial working datas
 - **numpy** for adding algorithms & mathematics functions
 - **requests** for HTTP requests manipulations
+- **pyproj** for reprojection if needed
+- **OWSlib** for GeoSpatial libraries
+- **pyogrio** for better perfs
 
 > 🚨 To prevent issues for automatic upgrade's issues, it's recommended to lock packages versions and check sometimes to upgrade them manually
 
@@ -69,7 +72,7 @@ exit                  # Kill the virtual environement (pipenv)
 
 ### Files
 
-- All your Python scripts need to be added on the `script/` folder.
+- All your Python scripts need to be added on the `2_script/` folder.
 - `.env.SAMPLE` file is a template to create the `.env` file
 - `Pipfile` is the dependencies file configuration of the project
 - `Pipfile.lock` (not versionnend) is the current dependencies packages installed on your application on the pipenv

@@ -1,0 +1,138 @@
+
+# Script Clip "roads area" & KPIs generation for vegetation areas (Métropole De Lyon)
+
+## A - Prerequisites
+
+
+```
+Scripts used :
+./2_script/generate_1_shp_comunes_vege.py
+./2_script/generate_2_shp_kpi_vege.py
+```
+
+### 1. Development environment required
+
+
+- ***Python*** installed globally (version **3.11**)
+- ***Pypi*** installed and up-to-date
+- ***Pipenv*** installed and up-to-date
+- Technical dependencies (python libraries) :
+   - **geopandas** (version 1.0.1)
+   - **numpy** (version 2.2.2)
+   - **requests** (version 2.32.3)
+   - **pyproj** (version 3.7.1)
+   - **OWSlib** (version 0.32.1)
+   - **geojson** (version 3.2.0)
+   - **pyogrio** (version 0.11.1)
+
+### 2. Input Data structure requirements
+
+This script need a structure requirements for the input data files (before running the first script) :
+> The attribute table of the input data files needs a specific column called **strate** with 3 possible values : [`arborescent`, `arbustif`, `herbacee`] and it will use to categorize geometries.
+
+### 3. Script Architecture
+
+```
+script/
+│ 
+├── 0_geodatas/
+│   ├── input/
+│   └── output/
+├── 2_script/
+│   ├── generate_1_shp_comunes_vege_clipped.py
+│   └── generate_2_shp_kpi_vege.py
+├── utils/
+│   ├── constants.py
+│   └── functions.py
+├── logs/
+│   ├── ...
+|   ...
+├── .env.EXAMPLE
+├── .gitignore
+├── LICENCE.md
+├── README.md
+├── Package.json
+├── Pipfile
+└── requirements.txt
+```
+- More details
+   > `requirements.txt` is used for Docker containers init.<br>
+   > All data files required for the script launch needs to be add on `/0_geodatas/input/` directory.<br>
+   > All data files generated will be save on `/0_geodatas/output/` directory.<br>
+   > Some parameters are editable on the `/utils/constants.py` file (*for example: input or output path*).<br>
+   > Some functions are available on the `/utils/functions.py` file<br>
+
+   > ⚠️ The second script use "Lyon Metropolis Open Data" to get all cities. If you want to use another data sources, you've to edit the `2_script/generate_2_shp_kpi_vege.py` file on lines 103-105.
+
+- File `2_script/generate_1_shp_comunes_vege_clipped.py`
+   > This script takes as a parameter **a directory** containing data files (Shapefile or GeoPackage), as well as **a data file** (Shapefile or GeoPackage) which will be used as a geometry *clipping mask*.<br>
+   > The "clipping mask" will be apply on all geometries presents on "data files" of the first parameter.<br>
+   > More technical details are available on the Function Documentation on the file `generate_1_shp_comunes_vege_clipped.py:35`<br>
+   > You can edit some options on the running script at lines 219 : `recursive=False`, `add_source_col=False` and `use_pyogrio=True` (more details on the function).
+
+- File `2_script/generate_2_shp_kpi_vege.py`
+   > This script takes as a parameter **a data file** (Shapefile or GeoPackage) and it will extract all geometries city by city (all cities of Lyon metropolis for this script) and generate statistics on it.<br>
+   > At the end it will generate a Shapefile with all cities and datas, with a global result on the console (at the end of the script).<br>
+   > More technical details are available on the Function Documentation on the file `generate_2_shp_kpi_vege.py:29`
+
+## B - Installation and configuration
+
+1. Pull the project on your post
+2. Init the `pipenv` and install dependencies
+   ```shell
+   pipenv shell
+   pipenv install -d
+   ```
+3. You can already run the script, or configure some options :
+   - `./utils/constants.py` you can edit the Path for **input** data files and **output** data files
+   - If you want to change the data source of cities (all cities of Lyon metropolis for this script) you can change the WFS import on the file `2_script/generate_2_shp_kpi_vege.py` on lines 103-105.
+
+## D - Execution & results
+
+1. If your input data files are one or more Shapefiles or GeoPackages (called "data_to_clip_X.shp"), add your folder on the **input** directory with your clipping mask data file (called "mask_clipping_Y.shp") like this (for Shapefile example) :
+   ```shell
+   script/
+   │ 
+   ├── 0_geodatas/
+   │   ├── input/
+   │   │   ├── data_to_clip_X/
+   |   │   │   ├── data_to_clip_X.cpg
+   |   │   │   ├── data_to_clip_X.dbf
+   |   │   │   ├── data_to_clip_X.prj
+   |   │   │   ├── data_to_clip_X.shp
+   |   │   │   ├── data_to_clip_X.shx
+   |   │   │   ...
+   |   |   ├── mask_clipping_Y.cpg
+   |   |   ├── mask_clipping_Y.dbf
+   |   |   ├── mask_clipping_Y.prj
+   |   |   ├── mask_clipping_Y.shp
+   |   |   ├── mask_clipping_Y.shx
+   |   ... ...
+   ...
+   ```
+
+2. You can run your first script for clipping all data files input with your mask file like this :
+
+   The script needs some parameters :
+   - `--dir` : the directory of input data files to clip
+   - `--origin` : the parent directory of the import data directory (in the case of input data were on "output" folder)
+   - `--mask` : the input data file used as a mask for clipping
+   - `--name` : the name of the final file generated by the script
+   - `--extension` : the pattern used to select input data files (ex: "\*.shp" or "\*.gpkg")
+
+   The command will be :
+   ```shell
+   python ./2_script/generate_1_shp_comunes_vege_clipped.py --dir "data_to_clip_X" --origin "INPUT" --mask "mask_clipping_Y.shp" --name "final_file_result.shp" --extension "*.shp"
+   ```
+   
+3. You can run your second script for generating statistics on a new file like this :
+
+   The script needs some parameters :
+   - `--file` : the input data files to import
+   - `--origin` : the parent directory of the import data directory (in the case of input data were on "output" folder)
+   - `--name` : the name of the final file generated by the script (you can specify ".gpkg" if you want a GeoPackage result instead of a Shapefile result)
+
+   The command will be :
+   ```shell
+   python ./2_script/generate_2_shp_kpi_vege.py --file "final_file_result.shp" --origin "OUTPUT" --name "final_complete_stats.shp"
+   ```

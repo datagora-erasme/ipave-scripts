@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+psycopg2-binary = "==2.9.10"
+geopandas = "==1.0.1"
+numpy = "==2.2.2"
+requests = "==2.32.3"
+pyproj = "==3.7.1"
+OWSlib = "==0.32.1"
+geojson= "==3.2.0"
+pyogrio = "==0.11.1"
+
+[requires]
+python_version = "3.11.9"
