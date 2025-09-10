@@ -5,6 +5,7 @@ from shapely.geometry import (
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+
 # from rasterio.mask import mask
 from rasterio.plot import show
 from rasterio.features import shapes
@@ -13,10 +14,7 @@ from scipy.sparse.csgraph import connected_components
 
 from utils.functions import *
 
-from utils.constants import (
-    BASE_DIR,
-    INPUT_DATA_DIR,
-    OUTPUT_DATA_DIR)
+from utils.constants import BASE_DIR, INPUT_DATA_DIR, OUTPUT_DATA_DIR
 
 
 """
@@ -28,8 +26,10 @@ Paramètres :
     specificComList : Liste des communes à traiter (facultatif : si par renseigné, traitement de toutes les communes par défaut)
         Exemple : specificComList = ['69072', '69286']
 """
+
+
 def vegeBigProcess(raster, specificComList=None):
-    
+
     # DEBUG
     # print(raster)
     # print(specificComList)
@@ -38,13 +38,18 @@ def vegeBigProcess(raster, specificComList=None):
     print("ℹ️  Début du découpage du traitement pour chaque commune")
 
     # On récupère le surfacique de la Métropole de Lyon
-    communes_larges=wfs2gp_df("metropole-de-lyon:adr_voie_lieu.adrcommunes_2024","https://data.grandlyon.com/geoserver/metropole-de-lyon/ows?SERVICE=WFS", reprojMetro=True, targetProj='EPSG:2154')
+    communes_larges = wfs2gp_df(
+        "metropole-de-lyon:adr_voie_lieu.adrcommunes_2024",
+        "https://data.grandlyon.com/geoserver/metropole-de-lyon/ows?SERVICE=WFS",
+        reprojMetro=True,
+        targetProj="EPSG:2154",
+    )
 
     # On ne garde que les communes de la Métropole de Lyon
-    communes=communes_larges[communes_larges["communegl"]==True] 
+    communes = communes_larges[communes_larges["communegl"] == True]
 
     # On retire l'entité qui comprends tous les arrondissements de Lyon
-    communes=communes[communes["trigramme"]!='LYO']
+    communes = communes[communes["trigramme"] != "LYO"]
 
     # DEBUG
     # print('GDF communes')
@@ -54,33 +59,52 @@ def vegeBigProcess(raster, specificComList=None):
 
     for index, row in communes.iterrows():
 
-        # FIXME: Import caca dans la loop mais sinon Python ne la voit pas...
+        # FIXME: Revoir l'import dans la loop mais sinon Python ne la voit pas...
         from rasterio.mask import mask
-        
+
         # DEBUG print commune row
         # print(row)
 
         # Start Timer
-        loopTimerName = "loopTimer_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        loopTimerName = (
+            "loopTimer_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
+        )
         looptimer = startTimerLog(loopTimerName)
-        print('ℹ️  Traitement appliqué à la commune n°', index, ':',row['insee'], row['trigramme'], row['nom'])
+        print(
+            "ℹ️  Traitement appliqué à la commune n°",
+            index,
+            ":",
+            row["insee"],
+            row["trigramme"],
+            row["nom"],
+        )
 
         # Vérifie s'il faut tester une liste spécifique, et si la commune est dans cette liste
         if specificComList:
 
-            if not row['insee'] in specificComList:
-                print('☑️  Commune n°', index, ':', row['insee'], row['trigramme'], row['nom'], 'ignorée')
+            if not row["insee"] in specificComList:
+                print(
+                    "☑️  Commune n°",
+                    index,
+                    ":",
+                    row["insee"],
+                    row["trigramme"],
+                    row["nom"],
+                    "ignorée",
+                )
                 # Fin du timer de l'item de loop ignoré
                 endTimerLog(looptimer)
                 # Skip current commune
                 continue
 
         # Get current Geom
-        currentGeom = row['geometry']
+        currentGeom = row["geometry"]
         # print(currentGeom)
 
         ### Clipper le raster à la geom séléctionnée
-        raster_clipped, transform_clipped = mask(dataset=raster, shapes=[currentGeom], crop=True)
+        raster_clipped, transform_clipped = mask(
+            dataset=raster, shapes=[currentGeom], crop=True
+        )
         raster_clipped = raster_clipped[0]
 
         # =================================
@@ -91,7 +115,7 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape 3 : Nettoyer les valeurs inutiles")
 
         # Timer
-        etape3Com = "etape3_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etape3Com = "etape3_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
         etape3timer = startTimerLog(etape3Com)
 
         # 1. Vérifier les valeurs présentes
@@ -110,8 +134,10 @@ def vegeBigProcess(raster, specificComList=None):
         # 4. Calculer extent à partir du transform raster clippé
         extent = (
             transform_clipped[2],  # minX
-            transform_clipped[2] + raster_clipped.shape[1] * transform_clipped[0],  # maxX
-            transform_clipped[5] + raster_clipped.shape[0] * transform_clipped[4],  # minY
+            transform_clipped[2]
+            + raster_clipped.shape[1] * transform_clipped[0],  # maxX
+            transform_clipped[5]
+            + raster_clipped.shape[0] * transform_clipped[4],  # minY
             transform_clipped[5],  # maxY
         )
 
@@ -122,7 +148,7 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape 4 : Vectoriser le raster sur la zone")
 
         # Timer
-        etape4Com = "etape4_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etape4Com = "etape4_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
         etape4timer = startTimerLog(etape4Com)
 
         # 1. Convertir en masque binaire si on veut ignorer les NaN
@@ -200,7 +226,7 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape 5 : Nettoyer les surfaces et les éléments")
 
         # Timer
-        etape5Com = "etape5_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etape5Com = "etape5_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
         etape5timer = startTimerLog(etape5Com)
 
         # 1) Buffer vectorisé (assure-toi d'être en mètres ; sinon reprojette avant)
@@ -211,8 +237,8 @@ def vegeBigProcess(raster, specificComList=None):
         #    - how='inner' évite les non-correspondances
         #    - predicate='intersects' s'appuie sur l'index spatial (STRtree)
         pairs = gpd.sjoin(
-            vege_buffer_zone[["geometry"]],     # on ne garde QUE geometry ici
-            vege_buffer_zone[["geometry"]],     # idem à droite
+            vege_buffer_zone[["geometry"]],  # on ne garde QUE geometry ici
+            vege_buffer_zone[["geometry"]],  # idem à droite
             how="inner",
             predicate="intersects",
         )
@@ -221,7 +247,7 @@ def vegeBigProcess(raster, specificComList=None):
         pairs = pairs[pairs.index != pairs["index_right"]]
 
         # 4) Garder seulement les paires de même classe
-        left_cls  = vege_buffer_zone.loc[pairs.index, "classe"].to_numpy()
+        left_cls = vege_buffer_zone.loc[pairs.index, "classe"].to_numpy()
         right_cls = vege_buffer_zone.loc[pairs["index_right"], "classe"].to_numpy()
         pairs = pairs[left_cls == right_cls]
 
@@ -260,7 +286,7 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape 6 : Simplification des entités")
 
         # Timer
-        etape6Com = "etape5_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etape6Com = "etape5_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
         etape6timer = startTimerLog(etape6Com)
 
         # Le but est de retirer l'effet dent de scie
@@ -288,7 +314,7 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape 7 : Regroupement des entités")
 
         # Timer
-        etape7Com = "etape7_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etape7Com = "etape7_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
         etape7timer = startTimerLog(etape7Com)
 
         # Regroupement de la classe 2 & 3 et 4 & 5
@@ -330,12 +356,17 @@ def vegeBigProcess(raster, specificComList=None):
         print("ℹ️  Début Etape finale : Export de la commune")
 
         # Timer
-        etapeFinCom = "etapeFin_" + row['insee'] + '_' + row['trigramme'] + '_' + row['nom']
+        etapeFinCom = (
+            "etapeFin_" + row["insee"] + "_" + row["trigramme"] + "_" + row["nom"]
+        )
         etapeFintimer = startTimerLog(etapeFinCom)
 
         # Construction du path (⚠️ PENSER AU TRIGRAMME DE LA COMMUNE)
-        exportPath = os.path.join(OUTPUT_DATA_DIR, "vegetation_stratifiee_2018_2154_" + row["trigramme"] + ".shp")
-        
+        exportPath = os.path.join(
+            OUTPUT_DATA_DIR,
+            "vegetation_stratifiee_2018_2154_" + row["trigramme"] + ".shp",
+        )
+
         # Export
         vege_clean.to_file(filename=exportPath, encoding="utf-8")
 
@@ -348,5 +379,6 @@ def vegeBigProcess(raster, specificComList=None):
 
         # Fin du timer de l'item de loop
         endTimerLog(looptimer)
+
 
 # TODO: Faire le regroupement des fichiers exportés
